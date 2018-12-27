@@ -1,0 +1,24 @@
+name: PlayerNotes
+version: 0.1
+author: pmme
+description: Allow staff to store and retrieve player notes in-game.
+main: nz.pmme.playernotes.PlayerNotes
+
+commands:
+  pn:
+    description: PlayerNotes commands
+    usage: /<command> <create|view|delete|deleteall>
+
+permissions:
+  playernotes.create:
+    description: Allows creation of player notes.
+    default: op
+  playernotes.view:
+    description: Allows viewing player notes.
+    default: op
+  playernotes.delete:
+    description: Allows deletion of player notes.
+    default: op
+  playernotes.deleteall:
+    description: Allows delection of all player notes.
+    default: op
