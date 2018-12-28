@@ -3,17 +3,26 @@ package nz.pmme.playernotes.commands;
 import nz.pmme.playernotes.PlayerNotes;
 import nz.pmme.playernotes.data.DataHandler;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public class Commands implements CommandExecutor
+public class Commands implements CommandExecutor, TabCompleter
 {
     private PlayerNotes plugin;
+    private static final String[] firstArguments = {
+            "create",
+            "view",
+            "viewall",
+            "delete",
+            "deleteall"
+    };
     private static final String[] msgPlayerNotesUsage = {
             ChatColor.DARK_AQUA + "PlayerNotes command usage:",
             ChatColor.WHITE + "/pn create <player> <notes>" + ChatColor.DARK_AQUA + " - Create notes about a player.",
@@ -26,6 +35,37 @@ public class Commands implements CommandExecutor
 
     public Commands( PlayerNotes plugin ) {
         this.plugin = plugin;
+    }
+
+    @Override
+    public List<String> onTabComplete( CommandSender commandSender, Command command, String alias, String[] args )
+    {
+        if( args.length == 1 )
+        {
+            List<String> matchingFirstArguments = new ArrayList<>();
+            String arg0lower = args[0].toLowerCase();
+            for( String argument : firstArguments ) {
+                if( arg0lower.isEmpty() || argument.toLowerCase().startsWith( arg0lower ) ) {
+                    matchingFirstArguments.add( argument );
+                }
+            }
+            return matchingFirstArguments;
+        }
+        else if( args.length == 2 )
+        {
+            if( args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("view") )
+            {
+                List<String> matchingPlayerNames = new ArrayList<>();
+                String arg1lower = args[1].toLowerCase();
+                for( Player player : plugin.getServer().getOnlinePlayers() ) {
+                    if( arg1lower.isEmpty() || player.getName().toLowerCase().startsWith( arg1lower ) || ChatColor.stripColor( player.getDisplayName() ).toLowerCase().startsWith( arg1lower ) ) {
+                        matchingPlayerNames.add( player.getName() );
+                    }
+                }
+                return matchingPlayerNames;
+            }
+        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -59,6 +99,7 @@ public class Commands implements CommandExecutor
                     if( results.isEmpty() ) {
                         sender.sendMessage(ChatColor.GRAY + "There are no player notes for " + args[1]);
                     } else {
+                        sender.sendMessage(ChatColor.GRAY + "Player notes for " + args[1] + ":" );
                         for( String result : results ) {
                             sender.sendMessage(result);
                         }
@@ -72,6 +113,7 @@ public class Commands implements CommandExecutor
                 if( results.isEmpty() ) {
                     sender.sendMessage(ChatColor.GRAY + "There are no player notes" );
                 } else {
+                    sender.sendMessage(ChatColor.GRAY + "All player notes:" );
                     for( String result : results ) {
                         sender.sendMessage(result);
                     }
