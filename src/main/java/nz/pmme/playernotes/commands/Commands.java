@@ -13,8 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Commands implements CommandExecutor, TabCompleter
-{
+public class Commands implements CommandExecutor, TabCompleter {
     private PlayerNotes plugin;
     private static final String[] firstArguments = {
             "create",
@@ -34,37 +33,36 @@ public class Commands implements CommandExecutor, TabCompleter
             ChatColor.WHITE + "/pn delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
     };
     private static final String msgPlayerNotesNoConsole = "This pn command must be used by an active player.";
+    private static final String msgNoPermission = ChatColor.RED + "You do not have permission to use this command";
 
-    public Commands( PlayerNotes plugin ) {
+    public Commands(PlayerNotes plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public List<String> onTabComplete( CommandSender commandSender, Command command, String alias, String[] args )
+    public List<String> onTabComplete(CommandSender commandSender, Command command, String alias, String[] args)
     {
-        if( args.length == 1 )
-        {
-            List<String> matchingFirstArguments = new ArrayList<>();
-            String arg0lower = args[0].toLowerCase();
-            for( String argument : firstArguments ) {
-                if( arg0lower.isEmpty() || argument.toLowerCase().startsWith( arg0lower ) ) {
-                    matchingFirstArguments.add( argument );
-                }
-            }
-            return matchingFirstArguments;
-        }
-        else if( args.length == 2 )
-        {
-            if( args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("view") || args[0].equalsIgnoreCase("delplayer") )
-            {
-                List<String> matchingPlayerNames = new ArrayList<>();
-                String arg1lower = args[1].toLowerCase();
-                for( Player player : plugin.getServer().getOnlinePlayers() ) {
-                    if( arg1lower.isEmpty() || player.getName().toLowerCase().startsWith( arg1lower ) || ChatColor.stripColor( player.getDisplayName() ).toLowerCase().startsWith( arg1lower ) ) {
-                        matchingPlayerNames.add( player.getName() );
+        if( commandSender.hasPermission("playernotes.view") ) {
+            if(args.length == 1) {
+                List<String> matchingFirstArguments = new ArrayList<>();
+                String arg0lower = args[0].toLowerCase();
+                for(String argument : firstArguments) {
+                    if(arg0lower.isEmpty() || argument.toLowerCase().startsWith(arg0lower)) {
+                        matchingFirstArguments.add(argument);
                     }
                 }
-                return matchingPlayerNames;
+                return matchingFirstArguments;
+            } else if(args.length == 2) {
+                if(args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("view") || args[0].equalsIgnoreCase("delplayer")) {
+                    List<String> matchingPlayerNames = new ArrayList<>();
+                    String arg1lower = args[1].toLowerCase();
+                    for(Player player : plugin.getServer().getOnlinePlayers()) {
+                        if(arg1lower.isEmpty() || player.getName().toLowerCase().startsWith(arg1lower) || ChatColor.stripColor(player.getDisplayName()).toLowerCase().startsWith(arg1lower)) {
+                            matchingPlayerNames.add(player.getName());
+                        }
+                    }
+                    return matchingPlayerNames;
+                }
             }
         }
         return Collections.emptyList();
@@ -83,6 +81,10 @@ public class Commands implements CommandExecutor, TabCompleter
             switch( args[0].toLowerCase() )
             {
             case "create":
+                if( !sender.hasPermission("playernotes.create") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
                 if( args.length >= 3 ) {
                     StringBuilder note = new StringBuilder();
                     for( int i = 2; i < args.length; ++i ) note.append( args[i] ).append(" ");
@@ -96,6 +98,10 @@ public class Commands implements CommandExecutor, TabCompleter
                 else displayCommandUsage(sender);
                 return true;
             case "view":
+                if( !sender.hasPermission("playernotes.view") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
                 if( args.length == 2 ) {
                     ArrayList<String> results = DataHandler.viewNotes( plugin.getDatabase(), args[1] );
                     if( results.isEmpty() ) {
@@ -111,6 +117,10 @@ public class Commands implements CommandExecutor, TabCompleter
                 else displayCommandUsage(sender);
                 return true;
             case "viewall":
+                if( !sender.hasPermission("playernotes.view") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
                 ArrayList<String> results = DataHandler.viewNotes( plugin.getDatabase(), null );
                 if( results.isEmpty() ) {
                     sender.sendMessage(ChatColor.GRAY + "There are no player notes" );
@@ -123,6 +133,10 @@ public class Commands implements CommandExecutor, TabCompleter
                 }
                 return true;
             case "del":
+                if( !sender.hasPermission("playernotes.delete") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
                 try {
                     if(args.length == 2 && Integer.valueOf(args[1]) > 0) {
                         DataHandler.deleteNotes(plugin.getDatabase(), Integer.valueOf(args[1]), null);
@@ -133,6 +147,10 @@ public class Commands implements CommandExecutor, TabCompleter
                 }
                 return true;
             case "delplayer":
+                if( !sender.hasPermission("playernotes.delete") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
                 if( args.length == 2 ) {
                     DataHandler.deleteNotes( plugin.getDatabase(), 0, args[1] );
                     sender.sendMessage(ChatColor.RED + "Notes for player " + ChatColor.DARK_AQUA + args[1] + ChatColor.RED + " deleted");
@@ -140,6 +158,10 @@ public class Commands implements CommandExecutor, TabCompleter
                 else displayCommandUsage(sender);
                 return true;
             case "delall":
+                if( !sender.hasPermission("playernotes.deleteall") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
                 DataHandler.deleteNotes( plugin.getDatabase(), 0, null );
                 sender.sendMessage(ChatColor.RED + "All notes deleted!");
                 return true;
