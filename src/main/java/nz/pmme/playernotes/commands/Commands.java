@@ -20,16 +20,18 @@ public class Commands implements CommandExecutor, TabCompleter
             "create",
             "view",
             "viewall",
-            "delete",
-            "deleteall"
+            "del",
+            "delplayer",
+            "delall"
     };
     private static final String[] msgPlayerNotesUsage = {
             ChatColor.DARK_AQUA + "PlayerNotes command usage:",
             ChatColor.WHITE + "/pn create <player> <notes>" + ChatColor.DARK_AQUA + " - Create notes about a player.",
             ChatColor.WHITE + "/pn view <player>" + ChatColor.DARK_AQUA + " - View notes about a player.",
             ChatColor.WHITE + "/pn viewall" + ChatColor.DARK_AQUA + " - View all notes.",
-            ChatColor.WHITE + "/pn delete <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
-            ChatColor.WHITE + "/pn deleteall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
+            ChatColor.WHITE + "/pn del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
+            ChatColor.WHITE + "/pn delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about a player.",
+            ChatColor.WHITE + "/pn delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
     };
     private static final String msgPlayerNotesNoConsole = "This pn command must be used by an active player.";
 
@@ -53,7 +55,7 @@ public class Commands implements CommandExecutor, TabCompleter
         }
         else if( args.length == 2 )
         {
-            if( args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("view") )
+            if( args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("view") || args[0].equalsIgnoreCase("delplayer") )
             {
                 List<String> matchingPlayerNames = new ArrayList<>();
                 String arg1lower = args[1].toLowerCase();
@@ -120,15 +122,25 @@ public class Commands implements CommandExecutor, TabCompleter
                     sender.sendMessage(ChatColor.GRAY + "End of notes" );
                 }
                 return true;
-            case "delete":
+            case "del":
+                try {
+                    if(args.length == 2 && Integer.valueOf(args[1]) > 0) {
+                        DataHandler.deleteNotes(plugin.getDatabase(), Integer.valueOf(args[1]), null);
+                        sender.sendMessage(ChatColor.RED + "Note " + ChatColor.DARK_AQUA + args[1] + ChatColor.RED + " deleted");
+                    } else displayCommandUsage(sender);
+                } catch(NumberFormatException e) {
+                    displayCommandUsage(sender);
+                }
+                return true;
+            case "delplayer":
                 if( args.length == 2 ) {
-                    DataHandler.deleteNote( plugin.getDatabase(), Integer.valueOf(args[1]) );
-                    sender.sendMessage(ChatColor.RED + "Note deleted");
+                    DataHandler.deleteNotes( plugin.getDatabase(), 0, args[1] );
+                    sender.sendMessage(ChatColor.RED + "Notes for player " + ChatColor.DARK_AQUA + args[1] + ChatColor.RED + " deleted");
                 }
                 else displayCommandUsage(sender);
                 return true;
-            case "deleteall":
-                DataHandler.deleteAllNotes( plugin.getDatabase() );
+            case "delall":
+                DataHandler.deleteNotes( plugin.getDatabase(), 0, null );
                 sender.sendMessage(ChatColor.RED + "All notes deleted!");
                 return true;
             }

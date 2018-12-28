@@ -7,7 +7,7 @@ main: nz.pmme.playernotes.PlayerNotes
 commands:
   pn:
     description: PlayerNotes commands
-    usage: /<command> <create|view|delete|deleteall>
+    usage: /<command> <create|view|del|delplayer|delall>
 
 permissions:
   playernotes.create:

@@ -78,24 +78,18 @@ public class DataHandler {
         return null;
     }
 
-    public static void deleteNote( Database database, int id )
+    public static void deleteNotes( Database database, int id, String aboutPlayerFilter )
     {
         Connection connection = database.getConnection();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement( "DELETE FROM player_notes WHERE id=" + id );
-            preparedStatement.execute();
-            preparedStatement.close();
-        }
-        catch (SQLException sQLException) {
-            sQLException.printStackTrace();
-        }
-    }
-
-    public static void deleteAllNotes( Database database )
-    {
-        Connection connection = database.getConnection();
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement( "DELETE FROM player_notes" );
+            StringBuilder statement = new StringBuilder();
+            statement.append( "DELETE FROM player_notes" );
+            if(aboutPlayerFilter != null ) {
+                statement.append( " WHERE player='" ).append( aboutPlayerFilter ).append( "'" );
+            } else if( id > 0 ) {
+                statement.append( " WHERE id=" ).append( id );
+            }
+            PreparedStatement preparedStatement = connection.prepareStatement( statement.toString() );
             preparedStatement.execute();
             preparedStatement.close();
         }
