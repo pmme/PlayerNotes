@@ -1,6 +1,7 @@
 package nz.pmme.playernotes;
 
 import nz.pmme.playernotes.commands.Commands;
+import nz.pmme.playernotes.data.DataHandler;
 import nz.pmme.playernotes.data.Database;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,6 +12,8 @@ public class PlayerNotes extends JavaPlugin {
     public void onEnable() {
         this.saveDefaultConfig();
         database.openDatabaseConnection();
+        DataHandler.generateTables(database);
+        DataHandler.checkVersion(database);
         this.getCommand("pn").setExecutor(new Commands(this));
     }
 

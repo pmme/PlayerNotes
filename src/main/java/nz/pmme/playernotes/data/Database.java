@@ -6,7 +6,6 @@ import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import nz.pmme.playernotes.data.DataHandler;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
@@ -42,7 +41,6 @@ public class Database {
             } else {
                 connection = DriverManager.getConnection("jdbc:mysql://" + config.getString("sql.host") + ":" + config.getString("sql.port") + "/" + config.getString("sql.database"), config.getString("sql.user"), config.getString("sql.pass"));
             }
-            DataHandler.generateTables(this);
         }
         catch (SQLException sQLException) {
             System.out.println("ERROR CONNECTING TO DATABASE!");

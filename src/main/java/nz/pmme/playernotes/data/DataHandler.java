@@ -3,23 +3,21 @@ package nz.pmme.playernotes.data;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-import org.bukkit.Bukkit;
+
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-public class DataHandler {
-    public static void generateTables( Database database ) {
+public class DataHandler
+{
+    private static final int thisVersion = 1;
+
+    public static void generateTables( Database database )
+    {
         Connection connection = database.getConnection();
         try {
-
-            // Check a version number in a player_notes_settings table to check for database conversion requirements.
-
+            PreparedStatement preparedStatement1 = connection.prepareStatement("CREATE TABLE IF NOT EXISTS player_notes_other(id INTEGER PRIMARY KEY,key VARCHAR(255) NOT NULL,value VARCHAR(255) NOT NULL)");
+            preparedStatement1.execute();
+            preparedStatement1.close();
 
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS player_notes(id INTEGER PRIMARY KEY,player VARCHAR(255) NOT NULL,note_by VARCHAR(255) NOT NULL,note VARCHAR(255) NOT NULL)");
             preparedStatement.execute();
@@ -28,6 +26,52 @@ public class DataHandler {
         catch (SQLException sQLException) {
             sQLException.printStackTrace();
         }
+    }
+
+    public static boolean checkVersion( Database database )
+    {
+        boolean versionOkay = true;
+        Connection connection = database.getConnection();
+        try {
+            int version = 0;
+            String statement = "SELECT value FROM player_notes_other WHERE key='VERSION'";
+            PreparedStatement preparedStatement = connection.prepareStatement(statement.toString());
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()) {
+                String value = resultSet.getString("value");
+                version = Integer.valueOf(value);
+            }
+            resultSet.close();
+            preparedStatement.close();
+
+            if( version == 0 )
+            {
+                // Set the first version number.
+                preparedStatement = connection.prepareStatement( " INSERT INTO player_notes_other(key, value) VALUES ('VERSION','" + thisVersion + "')" );
+                preparedStatement.execute();
+                preparedStatement.close();
+            }
+            else if( version > thisVersion )
+            {
+                System.out.println( "[PlayerNotes] Database is a future version: " + version + ". This build uses version " + thisVersion + ". This may cause errors.");
+                versionOkay = false;
+            }
+            else if( version < thisVersion )
+            {
+                System.out.println( "[PlayerNotes] Database version " + version + " will be upgraded to " + thisVersion + ".");
+
+                // Upgrade the table structure to this version.
+
+                // Update version number.
+                preparedStatement = connection.prepareStatement( "UPDATE player_notes_other SET value='" + thisVersion + "' WHERE key='VERSION'" );
+                preparedStatement.execute();
+                preparedStatement.close();
+            }
+        }
+        catch (SQLException sQLException) {
+            sQLException.printStackTrace();
+        }
+        return versionOkay;
     }
 
     public static void createNote( Database database, String notingPlayer, String aboutPlayer, String note )
