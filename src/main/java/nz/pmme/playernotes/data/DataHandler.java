@@ -3,17 +3,37 @@ package nz.pmme.playernotes.data;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.ChatColor;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class DataHandler
 {
     private static final int thisVersion = 1;
+    private Plugin plugin;
+    private Database database;
 
-    public static void generateTables( Database database )
+    // This map stores the query results from players.
+    // Each player has only a single buffer of query results, i.e. the results of their last query.
+    private Map< UUID, ArrayList<PlayerNote> > queryResultsForPlayers = new HashMap<>();
+
+    public DataHandler( Plugin plugin, Database database ) {
+        this.plugin = plugin;
+        this.database = database;
+    }
+
+    public ArrayList<PlayerNote> getLastResults( UUID requestingPlayer )
     {
-        Connection connection = database.getConnection();
+        return queryResultsForPlayers.get(requestingPlayer);
+    }
+
+    public void generateTables()
+    {
+        Connection connection = this.database.getConnection();
         try {
             PreparedStatement preparedStatement1 = connection.prepareStatement("CREATE TABLE IF NOT EXISTS player_notes_other(id INTEGER PRIMARY KEY,key VARCHAR(255) NOT NULL,value VARCHAR(255) NOT NULL)");
             preparedStatement1.execute();
@@ -28,10 +48,10 @@ public class DataHandler
         }
     }
 
-    public static boolean checkVersion( Database database )
+    public boolean checkVersion()
     {
         boolean versionOkay = true;
-        Connection connection = database.getConnection();
+        Connection connection = this.database.getConnection();
         try {
             int version = 0;
             String statement = "SELECT value FROM player_notes_other WHERE key='VERSION'";
@@ -74,9 +94,9 @@ public class DataHandler
         return versionOkay;
     }
 
-    public static void createNote( Database database, String notingPlayer, String aboutPlayer, String note )
+    public void createNote( UUID requestingPlayer, String notingPlayer, String aboutPlayer, String note )
     {
-        Connection connection = database.getConnection();
+        Connection connection = this.database.getConnection();
         try {
             String statement = "INSERT INTO player_notes(player, note_by, note) VALUES (?,?,?)";
             PreparedStatement preparedStatement = connection.prepareStatement( statement );
@@ -85,17 +105,20 @@ public class DataHandler
             preparedStatement.setString( 3, note );
             preparedStatement.execute();
             preparedStatement.close();
+
+            // Clear any previous query results that may have been stored.
+            queryResultsForPlayers.put( requestingPlayer, null );
         }
         catch (SQLException sQLException) {
             sQLException.printStackTrace();
         }
     }
 
-    public static ArrayList<String> viewNotes( Database database, String aboutPlayerFilter )
+    public ArrayList<PlayerNote> viewNotes( UUID requestingPlayer, String aboutPlayerFilter )
     {
-        Connection connection = database.getConnection();
+        Connection connection = this.database.getConnection();
         try {
-            ArrayList<String> results = new ArrayList<>();
+            ArrayList<PlayerNote> results = new ArrayList<>();
             StringBuilder statement = new StringBuilder();
             statement.append( "SELECT * FROM player_notes" );
             if(aboutPlayerFilter != null ) {
@@ -105,15 +128,15 @@ public class DataHandler
             PreparedStatement preparedStatement = connection.prepareStatement( statement.toString() );
             ResultSet resultSet = preparedStatement.executeQuery();
             while( resultSet.next() ) {
-                int id = resultSet.getInt("id");
-                String notingPlayer = resultSet.getString("note_by");
-                String player = resultSet.getString("player");
-                String note = resultSet.getString("note");
-                String result = ChatColor.GREEN + "#" + id + ": " + ChatColor.DARK_AQUA + player + ChatColor.WHITE + " - " + note + ChatColor.RED + " < " + notingPlayer;
-                results.add(result);
+                PlayerNote playerNote = new PlayerNote( resultSet.getInt("id"), resultSet.getString("note_by"), resultSet.getString("player"), resultSet.getString("note") );
+                results.add(playerNote);
             }
             resultSet.close();
             preparedStatement.close();
+
+            // Store the results in the map. Results can be re-displayed and other pages can be displayed from these buffered results.
+            queryResultsForPlayers.put( requestingPlayer, results );
+
             return results;
         }
         catch (SQLException sQLException) {
@@ -122,9 +145,9 @@ public class DataHandler
         return null;
     }
 
-    public static void deleteNotes( Database database, int id, String aboutPlayerFilter )
+    public void deleteNotes( UUID requestingPlayer, int id, String aboutPlayerFilter )
     {
-        Connection connection = database.getConnection();
+        Connection connection = this.database.getConnection();
         try {
             StringBuilder statement = new StringBuilder();
             statement.append( "DELETE FROM player_notes" );
@@ -136,6 +159,9 @@ public class DataHandler
             PreparedStatement preparedStatement = connection.prepareStatement( statement.toString() );
             preparedStatement.execute();
             preparedStatement.close();
+
+            // Clear any previous query results that may have been stored.
+            queryResultsForPlayers.put( requestingPlayer, null );
         }
         catch (SQLException sQLException) {
             sQLException.printStackTrace();

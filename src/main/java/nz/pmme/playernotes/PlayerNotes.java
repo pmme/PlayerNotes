@@ -7,13 +7,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class PlayerNotes extends JavaPlugin {
     private Database database = new Database(this);
+    private DataHandler dataHandler = new DataHandler(this, this.database);
 
     @Override
     public void onEnable() {
         this.saveDefaultConfig();
         database.openDatabaseConnection();
-        DataHandler.generateTables(database);
-        DataHandler.checkVersion(database);
+        dataHandler.generateTables();
+        dataHandler.checkVersion();
         this.getCommand("pn").setExecutor(new Commands(this));
     }
 
@@ -25,5 +26,6 @@ public class PlayerNotes extends JavaPlugin {
     public Database getDatabase() {
         return database;
     }
+    public DataHandler getDataHandler() { return dataHandler; }
 }
 

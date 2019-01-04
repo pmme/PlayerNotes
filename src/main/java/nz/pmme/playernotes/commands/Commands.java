@@ -1,7 +1,7 @@
 package nz.pmme.playernotes.commands;
 
 import nz.pmme.playernotes.PlayerNotes;
-import nz.pmme.playernotes.data.DataHandler;
+import nz.pmme.playernotes.data.PlayerNote;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -12,11 +12,13 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public class Commands implements CommandExecutor, TabCompleter {
     private PlayerNotes plugin;
     private static final String[] firstArguments = {
             "create",
+            "new",
             "view",
             "viewall",
             "del",
@@ -25,18 +27,31 @@ public class Commands implements CommandExecutor, TabCompleter {
     };
     private static final String[] msgPlayerNotesUsage = {
             ChatColor.DARK_AQUA + "PlayerNotes command usage:",
-            ChatColor.WHITE + "/pn create <player> <notes>" + ChatColor.DARK_AQUA + " - Create notes about a player.",
+            ChatColor.WHITE + "/pn create|new <player> <notes>" + ChatColor.DARK_AQUA + " - Create notes about a player.",
             ChatColor.WHITE + "/pn view <player>" + ChatColor.DARK_AQUA + " - View notes about a player.",
             ChatColor.WHITE + "/pn viewall" + ChatColor.DARK_AQUA + " - View all notes.",
+            ChatColor.WHITE + "/pn <page number>" + ChatColor.DARK_AQUA + " - View numbered page of notes from last view or viewall.",
             ChatColor.WHITE + "/pn del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
             ChatColor.WHITE + "/pn delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about a player.",
             ChatColor.WHITE + "/pn delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
     };
     private static final String msgPlayerNotesNoConsole = "This pn command must be used by an active player.";
-    private static final String msgNoPermission = ChatColor.RED + "You do not have permission to use this command";
+    private static final String msgNoPermission = ChatColor.RED + "You do not have permission to use this command.";
+
+    private static int resultsPerPage = 18;
+
+    private final UUID uuidForConsole = UUID.randomUUID();  // A random UUID to represent the console when queries are entered from the console.
 
     public Commands(PlayerNotes plugin) {
         this.plugin = plugin;
+    }
+
+    private UUID getUuidForSender( CommandSender sender ) {
+        return ( sender instanceof Player) ? ((Player) sender).getUniqueId() : this.uuidForConsole;
+    }
+
+    String getFormattedNoteLine( PlayerNote playerNote ) {
+        return ChatColor.GRAY + "#" + playerNote.id + ": " + ChatColor.DARK_AQUA + playerNote.player + ChatColor.GRAY + " - " + ChatColor.WHITE + playerNote.note + ChatColor.RED + " < " + playerNote.notingPlayer;
     }
 
     @Override
@@ -81,6 +96,7 @@ public class Commands implements CommandExecutor, TabCompleter {
             switch( args[0].toLowerCase() )
             {
             case "create":
+            case "new":
                 if( !sender.hasPermission("playernotes.create") ) {
                     sender.sendMessage(msgNoPermission);
                     return true;
@@ -89,9 +105,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                     StringBuilder note = new StringBuilder();
                     for( int i = 2; i < args.length; ++i ) note.append( args[i] ).append(" ");
                     if( sender instanceof Player ) {
-                        DataHandler.createNote( plugin.getDatabase(), /*((Player)sender).getUniqueId().toString()*/sender.getName(), args[1], note.toString() );
+                        plugin.getDataHandler().createNote( this.getUuidForSender(sender), /*((Player)sender).getUniqueId().toString()*/sender.getName(), args[1], note.toString() );
                     } else {
-                        DataHandler.createNote( plugin.getDatabase(), "Console", args[1], note.toString() );
+                        plugin.getDataHandler().createNote( this.getUuidForSender(sender),"Console", args[1], note.toString() );
                     }
                     sender.sendMessage(ChatColor.GREEN + "Note added");
                 }
@@ -103,15 +119,17 @@ public class Commands implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if( args.length == 2 ) {
-                    ArrayList<String> results = DataHandler.viewNotes( plugin.getDatabase(), args[1] );
+                    ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender), args[1] );
                     if( results.isEmpty() ) {
                         sender.sendMessage(ChatColor.GRAY + "There are no player notes for " + args[1]);
                     } else {
+                        int pagesOfResults = ( results.size() / this.resultsPerPage ) + 1;
                         sender.sendMessage(ChatColor.GRAY + "Player notes for " + args[1] + ":" );
-                        for( String result : results ) {
-                            sender.sendMessage(result);
+                        for( int i = 0, line = 0; i < results.size() && line < this.resultsPerPage; ++i, ++line ) {
+                            PlayerNote playerNote = results.get(i);
+                            sender.sendMessage(this.getFormattedNoteLine(playerNote));
                         }
-                        sender.sendMessage(ChatColor.GRAY + "End of notes for " + args[1]);
+                        sender.sendMessage( ChatColor.GRAY + "Page 1 of " + pagesOfResults + " notes for " + args[1] );
                     }
                 }
                 else displayCommandUsage(sender);
@@ -121,15 +139,17 @@ public class Commands implements CommandExecutor, TabCompleter {
                     sender.sendMessage(msgNoPermission);
                     return true;
                 }
-                ArrayList<String> results = DataHandler.viewNotes( plugin.getDatabase(), null );
+                ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender),null );
                 if( results.isEmpty() ) {
                     sender.sendMessage(ChatColor.GRAY + "There are no player notes" );
                 } else {
+                    int pagesOfResults = ( results.size() / this.resultsPerPage ) + 1;
                     sender.sendMessage(ChatColor.GRAY + "All player notes:" );
-                    for( String result : results ) {
-                        sender.sendMessage(result);
+                    for( int i = 0, line = 0; i < results.size() && line < this.resultsPerPage; ++i, ++line ) {
+                        PlayerNote playerNote = results.get(i);
+                        sender.sendMessage(this.getFormattedNoteLine(playerNote));
                     }
-                    sender.sendMessage(ChatColor.GRAY + "End of notes" );
+                    sender.sendMessage( ChatColor.GRAY + "Page 1 of " + pagesOfResults + " notes" );
                 }
                 return true;
             case "del":
@@ -139,7 +159,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 try {
                     if(args.length == 2 && Integer.valueOf(args[1]) > 0) {
-                        DataHandler.deleteNotes(plugin.getDatabase(), Integer.valueOf(args[1]), null);
+                        plugin.getDataHandler().deleteNotes( this.getUuidForSender(sender), Integer.valueOf(args[1]), null );
                         sender.sendMessage(ChatColor.RED + "Note " + ChatColor.DARK_AQUA + args[1] + ChatColor.RED + " deleted");
                     } else displayCommandUsage(sender);
                 } catch(NumberFormatException e) {
@@ -152,7 +172,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if( args.length == 2 ) {
-                    DataHandler.deleteNotes( plugin.getDatabase(), 0, args[1] );
+                    plugin.getDataHandler().deleteNotes( this.getUuidForSender(sender), 0, args[1] );
                     sender.sendMessage(ChatColor.RED + "Notes for player " + ChatColor.DARK_AQUA + args[1] + ChatColor.RED + " deleted");
                 }
                 else displayCommandUsage(sender);
@@ -162,8 +182,33 @@ public class Commands implements CommandExecutor, TabCompleter {
                     sender.sendMessage(msgNoPermission);
                     return true;
                 }
-                DataHandler.deleteNotes( plugin.getDatabase(), 0, null );
+                plugin.getDataHandler().deleteNotes( this.getUuidForSender(sender), 0, null );
                 sender.sendMessage(ChatColor.RED + "All notes deleted!");
+                return true;
+            }
+
+            // Check if the command was "/pn <page number>"
+            if( Character.isDigit( args[0].charAt(0) ) )
+            {
+                ArrayList<PlayerNote> results = plugin.getDataHandler().getLastResults( this.getUuidForSender(sender) );
+                if( results == null ) {
+                    sender.sendMessage( ChatColor.GRAY + "You have no current query. Use " + ChatColor.WHITE + "/pn view" + ChatColor.GRAY + " to query notes." );
+                } else {
+                    int page = Integer.valueOf( args[0] );
+                    int pagesOfResults = ( results.size() / this.resultsPerPage ) + 1;
+                    if( page < 1 ) {
+                        sender.sendMessage( ChatColor.GRAY + "Invalid page number. Page numbers start at 1." );
+                    } else if( page > pagesOfResults ) {
+                        sender.sendMessage( ChatColor.GRAY + "Page number is too high. There are " + pagesOfResults + " pages of notes." );
+                    } else {
+                        sender.sendMessage(ChatColor.GRAY + "Player notes:" );
+                        for( int i = (page-1) * this.resultsPerPage, line = 0; i < results.size() && line < this.resultsPerPage; ++i, ++line ) {
+                            PlayerNote playerNote = results.get(i);
+                            sender.sendMessage(this.getFormattedNoteLine(playerNote));
+                        }
+                        sender.sendMessage( ChatColor.GRAY + "Page " + page + " of " + pagesOfResults + " notes" );
+                    }
+                }
                 return true;
             }
         }
