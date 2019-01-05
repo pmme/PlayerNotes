@@ -122,7 +122,7 @@ public class DataHandler
             StringBuilder statement = new StringBuilder();
             statement.append( "SELECT * FROM player_notes" );
             if(aboutPlayerFilter != null ) {
-                statement.append( " WHERE player='" ).append( aboutPlayerFilter ).append( "'" );
+                statement.append( " WHERE UPPER(player)='" ).append( aboutPlayerFilter.toUpperCase() ).append( "'" );
             }
             statement.append( " ORDER BY id" );
             PreparedStatement preparedStatement = connection.prepareStatement( statement.toString() );
@@ -152,7 +152,7 @@ public class DataHandler
             StringBuilder statement = new StringBuilder();
             statement.append( "DELETE FROM player_notes" );
             if(aboutPlayerFilter != null ) {
-                statement.append( " WHERE player='" ).append( aboutPlayerFilter ).append( "'" );
+                statement.append( " WHERE UPPER(player)='" ).append( aboutPlayerFilter.toUpperCase() ).append( "'" );
             } else if( id > 0 ) {
                 statement.append( " WHERE id=" ).append( id );
             }
