@@ -55,7 +55,7 @@ public class DataHandler
         try {
             int version = 0;
             String statement = "SELECT value FROM player_notes_other WHERE key='VERSION'";
-            PreparedStatement preparedStatement = connection.prepareStatement(statement.toString());
+            PreparedStatement preparedStatement = connection.prepareStatement( statement );
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
                 String value = resultSet.getString("value");
@@ -168,6 +168,26 @@ public class DataHandler
         }
     }
 
+    public ArrayList<String> getNotedPlayers()
+    {
+        Connection connection = this.database.getConnection();
+        try {
+            ArrayList<String> results = new ArrayList<>();
+            String statement = "SELECT DISTINCT player FROM player_notes ORDER BY player";
+            PreparedStatement preparedStatement = connection.prepareStatement(statement);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while( resultSet.next() ) {
+                results.add( resultSet.getString("player") );
+            }
+            resultSet.close();
+            preparedStatement.close();
+            return results;
+        }
+        catch (SQLException sQLException) {
+            sQLException.printStackTrace();
+        }
+        return null;
+    }
 //    private static void asyncExecute(final PreparedStatement preparedStatement) {
 //        new BukkitRunnable(){
 //

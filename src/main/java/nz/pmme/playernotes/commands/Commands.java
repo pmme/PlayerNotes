@@ -27,12 +27,13 @@ public class Commands implements CommandExecutor, TabCompleter {
     };
     private static final String[] msgPlayerNotesUsage = {
             ChatColor.DARK_AQUA + "PlayerNotes command usage:",
-            ChatColor.WHITE + "/pn create|new <player> <notes>" + ChatColor.DARK_AQUA + " - Create notes about a player.",
-            ChatColor.WHITE + "/pn view <player>" + ChatColor.DARK_AQUA + " - View notes about a player.",
+            ChatColor.WHITE + "/pn create <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
+            ChatColor.WHITE + "/pn new <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
+            ChatColor.WHITE + "/pn view <player>" + ChatColor.DARK_AQUA + " - View notes about player.",
             ChatColor.WHITE + "/pn viewall" + ChatColor.DARK_AQUA + " - View all notes.",
-            ChatColor.WHITE + "/pn <page number>" + ChatColor.DARK_AQUA + " - View numbered page of notes from last view or viewall.",
+            ChatColor.WHITE + "/pn <page number>" + ChatColor.DARK_AQUA + " - View page of notes from last view/viewall.",
             ChatColor.WHITE + "/pn del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
-            ChatColor.WHITE + "/pn delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about a player.",
+            ChatColor.WHITE + "/pn delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about player.",
             ChatColor.WHITE + "/pn delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
     };
     private static final String msgPlayerNotesNoConsole = "This pn command must be used by an active player.";
@@ -58,7 +59,8 @@ public class Commands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender commandSender, Command command, String alias, String[] args)
     {
         if( commandSender.hasPermission("playernotes.view") ) {
-            if(args.length == 1) {
+            if(args.length == 1)
+            {
                 List<String> matchingFirstArguments = new ArrayList<>();
                 String arg0lower = args[0].toLowerCase();
                 for(String argument : firstArguments) {
@@ -67,8 +69,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                     }
                 }
                 return matchingFirstArguments;
-            } else if(args.length == 2) {
-                if(args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("view") || args[0].equalsIgnoreCase("delplayer")) {
+            }
+            else if(args.length == 2)
+            {
+                if( args[0].equalsIgnoreCase("create") || args[0].equalsIgnoreCase("new") )
+                {
                     List<String> matchingPlayerNames = new ArrayList<>();
                     String arg1lower = args[1].toLowerCase();
                     for(Player player : plugin.getServer().getOnlinePlayers()) {
@@ -77,6 +82,10 @@ public class Commands implements CommandExecutor, TabCompleter {
                         }
                     }
                     return matchingPlayerNames;
+                }
+                else if( args[0].equalsIgnoreCase("view") || args[0].equalsIgnoreCase("delplayer") )
+                {
+                    return plugin.getDataHandler().getNotedPlayers();
                 }
             }
         }
