@@ -95,6 +95,10 @@ public class Commands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand( CommandSender sender, Command command, String label, String[] args )
     {
+        if( !sender.hasPermission("playernotes.view") ) {
+            sender.sendMessage(msgNoPermission);
+            return true;
+        }
         if( args.length == 0 )
         {
             displayCommandUsage( sender );
