@@ -1,5 +1,5 @@
 name: PlayerNotes
-version: 1.1
+version: 1.2
 author: pmme
 description: Allow staff to store and retrieve player notes in-game.
 main: nz.pmme.playernotes.PlayerNotes
