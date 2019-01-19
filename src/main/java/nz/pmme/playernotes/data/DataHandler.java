@@ -114,15 +114,17 @@ public class DataHandler
         }
     }
 
-    public ArrayList<PlayerNote> viewNotes( UUID requestingPlayer, String aboutPlayerFilter )
+    public ArrayList<PlayerNote> viewNotes( UUID requestingPlayer, String aboutPlayerFilter, String authorFilter )
     {
         Connection connection = this.database.getConnection();
         try {
             ArrayList<PlayerNote> results = new ArrayList<>();
             StringBuilder statement = new StringBuilder();
             statement.append( "SELECT * FROM player_notes" );
-            if(aboutPlayerFilter != null ) {
+            if( aboutPlayerFilter != null ) {
                 statement.append( " WHERE UPPER(player)='" ).append( aboutPlayerFilter.toUpperCase() ).append( "'" );
+            } else if( authorFilter != null ) {
+                statement.append( " WHERE UPPER(note_by)='" ).append( authorFilter.toUpperCase() ).append( "'" );
             }
             statement.append( " ORDER BY id" );
             PreparedStatement preparedStatement = connection.prepareStatement( statement.toString() );
@@ -188,6 +190,28 @@ public class DataHandler
         }
         return null;
     }
+
+    public ArrayList<String> getAuthors()
+    {
+        Connection connection = this.database.getConnection();
+        try {
+            ArrayList<String> results = new ArrayList<>();
+            String statement = "SELECT DISTINCT note_by FROM player_notes ORDER BY note_by";
+            PreparedStatement preparedStatement = connection.prepareStatement(statement);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while( resultSet.next() ) {
+                results.add( resultSet.getString("note_by") );
+            }
+            resultSet.close();
+            preparedStatement.close();
+            return results;
+        }
+        catch (SQLException sQLException) {
+            sQLException.printStackTrace();
+        }
+        return null;
+    }
+
 //    private static void asyncExecute(final PreparedStatement preparedStatement) {
 //        new BukkitRunnable(){
 //

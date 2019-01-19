@@ -20,6 +20,7 @@ public class Commands implements CommandExecutor, TabCompleter {
             "create",
             "new",
             "view",
+            "viewby",
             "viewall",
             "del",
             "delplayer",
@@ -30,6 +31,7 @@ public class Commands implements CommandExecutor, TabCompleter {
             ChatColor.WHITE + "/playernotes create <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
             ChatColor.WHITE + "/playernotes new <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
             ChatColor.WHITE + "/playernotes view <player>" + ChatColor.DARK_AQUA + " - View notes about player.",
+            ChatColor.WHITE + "/playernotes viewby <author>" + ChatColor.DARK_AQUA + " - View notes by author.",
             ChatColor.WHITE + "/playernotes viewall" + ChatColor.DARK_AQUA + " - View all notes.",
             ChatColor.WHITE + "/playernotes <page number>" + ChatColor.DARK_AQUA + " - View page of notes from last view/viewall.",
             ChatColor.WHITE + "/playernotes del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
@@ -87,6 +89,10 @@ public class Commands implements CommandExecutor, TabCompleter {
                 {
                     return plugin.getDataHandler().getNotedPlayers();
                 }
+                else if( args[0].equalsIgnoreCase("viewby") )
+                {
+                    return plugin.getDataHandler().getAuthors();
+                }
             }
         }
         return Collections.emptyList();
@@ -132,7 +138,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if( args.length == 2 ) {
-                    ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender), args[1] );
+                    ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender), args[1], null );
                     if( results.isEmpty() ) {
                         sender.sendMessage(ChatColor.GRAY + "There are no player notes for " + args[1]);
                     } else {
@@ -147,12 +153,33 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 else displayCommandUsage(sender);
                 return true;
+            case "viewby":
+                if( !sender.hasPermission("playernotes.view") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
+                if( args.length == 2 ) {
+                    ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender), null, args[1] );
+                    if( results.isEmpty() ) {
+                        sender.sendMessage(ChatColor.GRAY + "There are no player notes written by " + args[1]);
+                    } else {
+                        int pagesOfResults = ( results.size() / this.resultsPerPage ) + 1;
+                        sender.sendMessage(ChatColor.GRAY + "Player notes written by " + args[1] + ":" );
+                        for( int i = 0, line = 0; i < results.size() && line < this.resultsPerPage; ++i, ++line ) {
+                            PlayerNote playerNote = results.get(i);
+                            sender.sendMessage(this.getFormattedNoteLine(playerNote));
+                        }
+                        sender.sendMessage( ChatColor.GRAY + "Page 1 of " + pagesOfResults + " notes by " + args[1] );
+                    }
+                }
+                else displayCommandUsage(sender);
+                return true;
             case "viewall":
                 if( !sender.hasPermission("playernotes.view") ) {
                     sender.sendMessage(msgNoPermission);
                     return true;
                 }
-                ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender),null );
+                ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes( this.getUuidForSender(sender), null, null );
                 if( results.isEmpty() ) {
                     sender.sendMessage(ChatColor.GRAY + "There are no player notes" );
                 } else {
