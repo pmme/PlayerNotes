@@ -5,9 +5,10 @@ description: Allow staff to store and retrieve player notes in-game.
 main: nz.pmme.playernotes.PlayerNotes
 
 commands:
-  pn:
+  playernotes:
     description: PlayerNotes commands
-    usage: /pn <create|new|view|viewall|viewby|del|delplayer|delall>
+    usage: /playernotes <create|new|view|viewall|viewby|del|delplayer|delall>
+    aliases: pn
 
 permissions:
   playernotes.create:

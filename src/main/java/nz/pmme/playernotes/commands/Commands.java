@@ -27,14 +27,14 @@ public class Commands implements CommandExecutor, TabCompleter {
     };
     private static final String[] msgPlayerNotesUsage = {
             ChatColor.DARK_AQUA + "PlayerNotes command usage:",
-            ChatColor.WHITE + "/pn create <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
-            ChatColor.WHITE + "/pn new <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
-            ChatColor.WHITE + "/pn view <player>" + ChatColor.DARK_AQUA + " - View notes about player.",
-            ChatColor.WHITE + "/pn viewall" + ChatColor.DARK_AQUA + " - View all notes.",
-            ChatColor.WHITE + "/pn <page number>" + ChatColor.DARK_AQUA + " - View page of notes from last view/viewall.",
-            ChatColor.WHITE + "/pn del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
-            ChatColor.WHITE + "/pn delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about player.",
-            ChatColor.WHITE + "/pn delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
+            ChatColor.WHITE + "/playernotes create <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
+            ChatColor.WHITE + "/playernotes new <player> <notes>" + ChatColor.DARK_AQUA + " - Create note about player.",
+            ChatColor.WHITE + "/playernotes view <player>" + ChatColor.DARK_AQUA + " - View notes about player.",
+            ChatColor.WHITE + "/playernotes viewall" + ChatColor.DARK_AQUA + " - View all notes.",
+            ChatColor.WHITE + "/playernotes <page number>" + ChatColor.DARK_AQUA + " - View page of notes from last view/viewall.",
+            ChatColor.WHITE + "/playernotes del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
+            ChatColor.WHITE + "/playernotes delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about player.",
+            ChatColor.WHITE + "/playernotes delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
     };
     private static final String msgPlayerNotesNoConsole = "This pn command must be used by an active player.";
     private static final String msgNoPermission = ChatColor.RED + "You do not have permission to use this command.";
@@ -200,12 +200,12 @@ public class Commands implements CommandExecutor, TabCompleter {
                 return true;
             }
 
-            // Check if the command was "/pn <page number>"
+            // Check if the command was "/playernotes <page number>"
             if( Character.isDigit( args[0].charAt(0) ) )
             {
                 ArrayList<PlayerNote> results = plugin.getDataHandler().getLastResults( this.getUuidForSender(sender) );
                 if( results == null ) {
-                    sender.sendMessage( ChatColor.GRAY + "You have no current query. Use " + ChatColor.WHITE + "/pn view" + ChatColor.GRAY + " to query notes." );
+                    sender.sendMessage( ChatColor.GRAY + "You have no current query. Use " + ChatColor.WHITE + "/playernotes view" + ChatColor.GRAY + " to query notes." );
                 } else {
                     int page = Integer.valueOf( args[0] );
                     int pagesOfResults = ( results.size() / this.resultsPerPage ) + 1;

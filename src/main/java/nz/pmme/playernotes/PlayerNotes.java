@@ -15,7 +15,7 @@ public class PlayerNotes extends JavaPlugin {
         database.openDatabaseConnection();
         dataHandler.generateTables();
         dataHandler.checkVersion();
-        this.getCommand("pn").setExecutor(new Commands(this));
+        this.getCommand("playernotes").setExecutor(new Commands(this));
     }
 
     @Override
