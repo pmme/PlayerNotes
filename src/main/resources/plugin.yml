@@ -7,7 +7,7 @@ main: nz.pmme.playernotes.PlayerNotes
 commands:
   playernotes:
     description: PlayerNotes commands
-    usage: /playernotes <create|new|view|viewall|viewby|del|delplayer|delall>
+    usage: /playernotes <create|new|view|viewall|viewby|viewallbook|vab|dispose|del|delplayer|delall>
     aliases: pn
 
 permissions:
@@ -16,6 +16,9 @@ permissions:
     default: op
   playernotes.view:
     description: Allows viewing player notes.
+    default: op
+  playernotes.book:
+    description: Allows viewing player notes in a book. Books can be dropped. Not so safe.
     default: op
   playernotes.delete:
     description: Allows deletion of player notes.

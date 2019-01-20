@@ -3,11 +3,14 @@ package nz.pmme.playernotes.commands;
 import nz.pmme.playernotes.PlayerNotes;
 import nz.pmme.playernotes.data.PlayerNote;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +25,9 @@ public class Commands implements CommandExecutor, TabCompleter {
             "view",
             "viewby",
             "viewall",
+            "viewallbook",
+            "vab",
+            "dispose",
             "del",
             "delplayer",
             "delall"
@@ -33,12 +39,15 @@ public class Commands implements CommandExecutor, TabCompleter {
             ChatColor.WHITE + "/playernotes view <player>" + ChatColor.DARK_AQUA + " - View notes about player.",
             ChatColor.WHITE + "/playernotes viewby <author>" + ChatColor.DARK_AQUA + " - View notes by author.",
             ChatColor.WHITE + "/playernotes viewall" + ChatColor.DARK_AQUA + " - View all notes.",
-            ChatColor.WHITE + "/playernotes <page number>" + ChatColor.DARK_AQUA + " - View page of notes from last view/viewall.",
+            ChatColor.WHITE + "/playernotes viewallbook" + ChatColor.DARK_AQUA + " - View all notes, in a book.",
+            ChatColor.WHITE + "/playernotes vab" + ChatColor.DARK_AQUA + " - View all notes, in a book.",
+            ChatColor.WHITE + "/playernotes dispose" + ChatColor.DARK_AQUA + " - Dispose of PlayerNotes book.",
+            ChatColor.WHITE + "/playernotes <page number>" + ChatColor.DARK_AQUA + " - View page of notes from last query.",
             ChatColor.WHITE + "/playernotes del <note id>" + ChatColor.DARK_AQUA + " - Delete notes.",
             ChatColor.WHITE + "/playernotes delplayer <player>" + ChatColor.DARK_AQUA + " - Delete all notes about player.",
             ChatColor.WHITE + "/playernotes delall" + ChatColor.DARK_AQUA + " - Delete all player notes. Empty the database."
     };
-    private static final String msgPlayerNotesNoConsole = "This pn command must be used by an active player.";
+    private static final String msgPlayerNotesNoConsole = "This playernotes command must be used by an active player.";
     private static final String msgNoPermission = ChatColor.RED + "You do not have permission to use this command.";
 
     private static int resultsPerPage = 18;
@@ -55,6 +64,10 @@ public class Commands implements CommandExecutor, TabCompleter {
 
     String getFormattedNoteLine( PlayerNote playerNote ) {
         return ChatColor.GRAY + "#" + playerNote.id + ": " + ChatColor.DARK_AQUA + playerNote.player + ChatColor.GRAY + " - " + ChatColor.WHITE + playerNote.note + ChatColor.RED + " < " + playerNote.notingPlayer;
+    }
+
+    String getFormattedNotePage( PlayerNote playerNote ) {
+        return ChatColor.GRAY + "Note ID #" + playerNote.id + ":\n" + ChatColor.DARK_AQUA + playerNote.player + "\n" + ChatColor.BLACK + playerNote.note + ChatColor.RED + "\nby " + playerNote.notingPlayer;
     }
 
     @Override
@@ -174,6 +187,48 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 else displayCommandUsage(sender);
                 return true;
+            case "viewallbook":
+            case "vab":
+                if( !sender.hasPermission("playernotes.view") || !sender.hasPermission("playernotes.book")) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
+                if( sender instanceof Player ) {
+                    ArrayList<PlayerNote> results = plugin.getDataHandler().viewNotes(this.getUuidForSender(sender), null, null);
+                    if(results.isEmpty()) {
+                        sender.sendMessage(ChatColor.GRAY + "There are no player notes");
+                    } else {
+                        ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+                        BookMeta bookMeta = (BookMeta)book.getItemMeta();
+                        bookMeta.setTitle("All player notes");
+                        bookMeta.setAuthor("PlayerNotes");
+                        List<String> pages = new ArrayList<>();
+                        for( int i = 0; i < results.size(); ++i ) {
+                            PlayerNote playerNote = results.get(i);
+                            pages.add(this.getFormattedNotePage(playerNote));
+                        }
+                        bookMeta.setPages(pages);
+                        book.setItemMeta(bookMeta);
+
+                        if( !this.giveBook((Player)sender, book) ) {
+                            sender.sendMessage(ChatColor.RED + "No empty inventory slot for PlayerNotes book.");
+                        }
+                    }
+                }
+                else displayNoConsoleMessage(sender);
+                return true;
+            case "dispose":
+                if( !sender.hasPermission("playernotes.view") ) {
+                    sender.sendMessage(msgNoPermission);
+                    return true;
+                }
+                if( sender instanceof Player ) {
+                    if( !this.disposeOfBook((Player)sender) ) {
+                        sender.sendMessage(ChatColor.RED + "No PlayerNotes book(s) to dispose.");
+                    }
+                }
+                else displayNoConsoleMessage(sender);
+                return true;
             case "viewall":
                 if( !sender.hasPermission("playernotes.view") ) {
                     sender.sendMessage(msgNoPermission);
@@ -254,6 +309,43 @@ public class Commands implements CommandExecutor, TabCompleter {
         }
         displayCommandUsage( sender );
         return true;
+    }
+
+    private boolean giveBook(Player player, ItemStack book)
+    {
+        boolean foundEmptySlot = false;
+        int heldSlot = player.getInventory().getHeldItemSlot();
+        ItemStack currentItem = player.getInventory().getItem(heldSlot);
+        if( currentItem != null ) {
+            for( int i = 0; i < player.getInventory().getSize(); ++i ) {
+                if( i != heldSlot && player.getInventory().getItem(i) == null ) {
+                    player.getInventory().setItem(i, currentItem);
+                    foundEmptySlot = true;
+                    break;
+                }
+            }
+        }
+        else foundEmptySlot = true;
+        if( foundEmptySlot ) {
+            player.getInventory().setItem( heldSlot, book );
+        }
+        return foundEmptySlot;
+    }
+
+    private boolean disposeOfBook(Player player)
+    {
+        boolean foundAbook = false;
+        for( int i = 0; i < player.getInventory().getSize(); ++i ) {
+            ItemStack item = player.getInventory().getItem(i);
+            if( item != null && item.getType() == Material.WRITTEN_BOOK ) {
+                BookMeta bookMeta = (BookMeta)item.getItemMeta();
+                if( bookMeta.getAuthor().equals("PlayerNotes") ) {
+                    player.getInventory().clear(i);
+                    foundAbook = true;
+                }
+            }
+        }
+        return foundAbook;
     }
 
     protected void displayCommandUsage( CommandSender sender )
