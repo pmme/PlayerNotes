@@ -142,6 +142,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         plugin.getDataHandler().createNote( this.getUuidForSender(sender),"Console", args[1], note.toString() );
                     }
                     sender.sendMessage(ChatColor.GREEN + "Note added");
+                    plugin.getDataHandler().saveLastNoteId( this.getUuidForSender(sender) );
                 }
                 else displayCommandUsage(sender);
                 return true;
@@ -213,6 +214,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         if( !this.giveBook((Player)sender, book) ) {
                             sender.sendMessage(ChatColor.RED + "No empty inventory slot for PlayerNotes book.");
                         }
+                        plugin.getDataHandler().saveLastNoteId( this.getUuidForSender(sender) );
                     }
                 }
                 else displayNoConsoleMessage(sender);
@@ -245,6 +247,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         sender.sendMessage(this.getFormattedNoteLine(playerNote));
                     }
                     sender.sendMessage( ChatColor.GRAY + "Page 1 of " + pagesOfResults + " notes" );
+                    plugin.getDataHandler().saveLastNoteId( this.getUuidForSender(sender) );
                 }
                 return true;
             case "del":

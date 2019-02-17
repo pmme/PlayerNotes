@@ -42,6 +42,10 @@ public class DataHandler
             PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS player_notes(id INTEGER PRIMARY KEY,player VARCHAR(255) NOT NULL,note_by VARCHAR(255) NOT NULL,note VARCHAR(255) NOT NULL)");
             preparedStatement.execute();
             preparedStatement.close();
+
+            PreparedStatement preparedStatement2 = connection.prepareStatement("CREATE TABLE IF NOT EXISTS player_notes_last(player VARCHAR(40) NOT NULL PRIMARY KEY,noteId INTEGER NOT NULL)");
+            preparedStatement2.execute();
+            preparedStatement2.close();
         }
         catch (SQLException sQLException) {
             sQLException.printStackTrace();
@@ -210,6 +214,57 @@ public class DataHandler
             sQLException.printStackTrace();
         }
         return null;
+    }
+
+    public void saveLastNoteId(UUID player)
+    {
+        Connection connection = this.database.getConnection();
+        try {
+            String statement = "SELECT id FROM player_notes ORDER BY id DESC LIMIT 1";
+            PreparedStatement preparedStatement = connection.prepareStatement( statement );
+            ResultSet resultSet = preparedStatement.executeQuery();
+            int lastId = resultSet.next() ? resultSet.getInt("id") : 0;
+            preparedStatement.close();
+            if(lastId > 0) {
+                String statement2 = "REPLACE INTO player_notes_last(player, noteId) VALUES (?,?)";
+                PreparedStatement preparedStatement2 = connection.prepareStatement( statement2 );
+                preparedStatement2.setString( 1, player.toString() );
+                preparedStatement2.setInt( 2, lastId );
+                preparedStatement2.execute();
+                preparedStatement2.close();
+            }
+        }
+        catch (SQLException sQLException) {
+            sQLException.printStackTrace();
+        }
+    }
+
+    public boolean hasUnreadNotes(UUID player)
+    {
+        boolean playerHasUnreadNotes = false;
+        Connection connection = this.database.getConnection();
+        try {
+            String statement = "SELECT id FROM player_notes ORDER BY id DESC LIMIT 1";
+            PreparedStatement preparedStatement = connection.prepareStatement( statement );
+            ResultSet resultSet = preparedStatement.executeQuery();
+            int lastId = resultSet.next() ? resultSet.getInt("id") : 0;
+            preparedStatement.close();
+            if(lastId > 0) {
+                String statement2 = "SELECT noteId FROM player_notes_last WHERE player='" + player.toString() + "'";
+                PreparedStatement preparedStatement2 = connection.prepareStatement( statement2 );
+                ResultSet resultSet2 = preparedStatement2.executeQuery();
+                if(resultSet2.next()) {
+                    if(resultSet2.getInt("noteId") < lastId) playerHasUnreadNotes = true;
+                } else {
+                    playerHasUnreadNotes = true;
+                }
+                preparedStatement2.close();
+            }
+        }
+        catch (SQLException sQLException) {
+            sQLException.printStackTrace();
+        }
+        return playerHasUnreadNotes;
     }
 
 //    private static void asyncExecute(final PreparedStatement preparedStatement) {

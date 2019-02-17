@@ -3,6 +3,7 @@ package nz.pmme.playernotes;
 import nz.pmme.playernotes.commands.Commands;
 import nz.pmme.playernotes.data.DataHandler;
 import nz.pmme.playernotes.data.Database;
+import nz.pmme.playernotes.listeners.EventsListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class PlayerNotes extends JavaPlugin {
@@ -16,6 +17,7 @@ public class PlayerNotes extends JavaPlugin {
         dataHandler.generateTables();
         dataHandler.checkVersion();
         this.getCommand("playernotes").setExecutor(new Commands(this));
+        this.getServer().getPluginManager().registerEvents( new EventsListener(this), this);
     }
 
     @Override
